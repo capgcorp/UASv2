@@ -37,52 +37,61 @@ private IDaoUas dao =null;
 
 	@Override
 	public String status(int application_Id) throws UasException {
-		// TODO Auto-generated method stub
-		return null;
+		
+		return dao.status(application_Id);
 	}
 
 	@Override
 	public boolean macLogin(String userName, String Password)
 			throws UasException {
-		// TODO Auto-generated method stub
-		return false;
+		
+		return dao.macLogin(userName, Password);
 	}
 
 	@Override
 	public boolean adminLogin(String userName, String Password)
 			throws UasException {
 		// TODO Auto-generated method stub
-		return false;
+		return dao.adminLogin(userName, Password);
 	}
 
 	@Override
 	public List<Application> allApplications(String programName)
 			throws UasException {
 		// TODO Auto-generated method stub
-		return null;
+		return dao.allApplications(programName);
 	}
 
 	@Override
 	public boolean acceptApplication(int application_Id, String interviewDate)
 			throws UasException {
 		// TODO Auto-generated method stub
-		return false;
+		return dao.acceptApplication(application_Id, interviewDate);
 	}
 
 
+	@Override
+	public boolean rejectApplication(int application_Id) throws UasException {
+		// TODO Auto-generated method stub
+		return dao.rejectApplication(application_Id);
+	}
+
+	
 	@Override
 	public boolean confirmApplication(int application_Id) throws UasException {
 		// TODO Auto-generated method stub
-		return false;
+		return dao.confirmApplication(application_Id);
 	}
 
+	
 	@Override
-	public boolean updProgramOffered(Programs_Offered program_offered)
-			throws UasException {
+	public boolean updProgramOffered(Programs_Offered program_offered,
+			String ProgramName) throws UasException {
 		// TODO Auto-generated method stub
 		return false;
 	}
 
+	
 	@Override
 	public boolean addProgramOffered(Programs_Offered program_offered)
 			throws UasException {
@@ -97,11 +106,12 @@ private IDaoUas dao =null;
 	}
 
 	@Override
-	public boolean updProgramScheduled(Programs_Scheduled program_Scheduled)
-			throws UasException {
+	public boolean updProgramScheduled(Programs_Scheduled program_Scheduled,
+			String scheduled_Program_Id) throws UasException {
 		// TODO Auto-generated method stub
 		return false;
 	}
+	
 
 	@Override
 	public boolean addProgramScheduled(Programs_Scheduled program_Scheduled)
@@ -120,25 +130,14 @@ private IDaoUas dao =null;
 	@Override
 	public List<Application> viewApplicants() throws UasException {
 		// TODO Auto-generated method stub
-		return null;
+		return dao.viewApplicants();
 	}
 
 	@Override
 	public List<Programs_Scheduled> viewPrograms(String startDate,
 			String endDate) throws UasException {
 		// TODO Auto-generated method stub
-		return null;
+		return dao.viewPrograms(startDate, endDate);
 	}
-
-	@Override
-	public boolean rejectApplication(int application_Id) throws UasException {
-		// TODO Auto-generated method stub
-		return false;
-	}
-	
-	
-	
-	
-	
 
 }
