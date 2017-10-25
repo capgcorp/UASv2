@@ -13,7 +13,7 @@ public class Application
 	private int marks_Obtained  ;
 	private String goals ;
 	private String email_Id  ;
-	private int scheduled_Program_Id  ;
+	private String scheduled_Program_Id  ;
 	private String status  ;
 	private Date date_Of_Interview  ;
 	private String address ;
@@ -76,11 +76,11 @@ public class Application
 	public void setEmail_Id(String email_Id) {
 		this.email_Id = email_Id;
 	}
-	public int getScheduled_Program_Id() {
+	public String getScheduled_Program_Id() {
 		return scheduled_Program_Id;
 	}
-	public void setScheduled_Program_Id(int scheduled_Program_Id) {
-		this.scheduled_Program_Id = scheduled_Program_Id;
+	public void setScheduled_Program_Id(String string) {
+		this.scheduled_Program_Id = string;
 	}
 	public String getStatus() {
 		return status;
