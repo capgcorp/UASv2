@@ -33,6 +33,32 @@ public class DaoUasImpl implements IDaoUas {
 		}
 	}
 
+	public Application mapApplication(ResultSet row) throws UasException {
+		Application application = new Application();
+		try {
+
+			application.setApplication_Id(row.getInt("application_Id"));
+			application.setFull_Name(row.getString("full_name"));
+			application.setDate_Of_Birth(row.getDate("date_Of_Birth"));
+			application.setHighest_Qualification(row
+					.getString("highest_Qualification"));
+			application.setMarks_Obtained(row.getInt("marks_Obtained"));
+			application.setGoals(row.getString("goals"));
+			application.setEmail_Id(row.getString("email_Id"));
+			application.setScheduled_Program_Id(row
+					.getString("scheduled_Program_Id"));
+			application.setStatus(row.getString("status"));
+			application.setDate_Of_Interview(row.getDate("date_Of_Interview"));
+			application.setAddress(row.getString("address"));
+
+		} catch (SQLException exp) {
+			classLogger.error(exp);
+			throw new UasException("Failed to retrieve Applicants Data");
+		}
+
+		return application;
+	}
+
 	public Programs_Scheduled mapProgram(ResultSet row) throws UasException {
 		Programs_Scheduled program = new Programs_Scheduled();
 		try {
@@ -82,31 +108,65 @@ public class DaoUasImpl implements IDaoUas {
 
 	@Override
 	public int apply(Application application) throws UasException {
-		// TODO Auto-generated method stub
-		return 0;
+		int appId = -1;
+		try (Connection con = conPro.getConnection();
+				PreparedStatement pst = con
+						.prepareStatement(IQueryMapper.APPLY);
+				PreparedStatement pstAppId = con
+						.prepareStatement(IQueryMapper.APPLICATION_ID);) {
+
+			pst.setString(1, application.getFull_Name());
+			pst.setString(2, application.getDate_Of_Birth().toString());
+			pst.setString(3, application.getHighest_Qualification());
+			pst.setInt(4, application.getMarks_Obtained());
+			pst.setString(5, application.getGoals());
+			pst.setString(6, application.getEmail_Id());
+			pst.setString(7, application.getScheduled_Program_Id());
+			pst.setString(8, application.getStatus());
+			pst.setString(9, application.getDate_Of_Interview().toString());
+			pst.setString(10, application.getAddress());
+
+			int result = pst.executeUpdate();
+			if (result > 0) {
+				ResultSet result1 = pstAppId.executeQuery();
+				if (result1.next()) {
+					appId = result1.getInt("currval");
+				}
+			} else {
+				appId = -1;
+			}
+		} catch (Exception msg) {
+			classLogger.error(msg);
+		}
+
+		return appId;
 	}
 
 	@Override
 	public String status(int application_Id) throws UasException {
-
+		String status = null;
 		try (Connection con = conPro.getConnection();
 				PreparedStatement pstStatus = con
 						.prepareStatement(IQueryMapper.VIEW_STATUS)) {
-
+			System.out.println("hell1");
 			pstStatus.setInt(1, application_Id);
-			ResultSet results = pstStatus.executeQuery();
+			System.out.println("hell0");
+			ResultSet result = pstStatus.executeQuery();
+			System.out.println("hell2");
+			if (result.next()) {
+				System.out.println("hell3");
+				status = result.getString("status");
+			}
 		} catch (SQLException exp) {
 			classLogger.error(exp);
 			throw new UasException("Failed to get Application status");
 		}
-
-		return null;
+		return status;
 	}
 
 	@Override
 	public boolean macLogin(String userName, String Password)
 			throws UasException {
-		// TODO Auto-generated method stub
 		boolean valid = false;
 
 		try (Connection con = conPro.getConnection();
@@ -153,8 +213,28 @@ public class DaoUasImpl implements IDaoUas {
 	@Override
 	public List<Application> allApplications(String programName)
 			throws UasException {
-		// TODO Auto-generated method stub
-		return null;
+		List<Application> applicationsList = new ArrayList<>();
+		try (Connection con = conPro.getConnection();
+				PreparedStatement pst = con
+						.prepareStatement(IQueryMapper.ALL_APPLICATIONS_ONE_PROG)) {
+			System.out.println("function enter");
+			pst.setString(1, programName);
+			ResultSet results = pst.executeQuery();
+			/*
+			 * results.next(); System.out.println(results.getInt("pincode"));
+			 */
+			System.out.println("query executed1");
+			while (results.next()) {
+				System.out.println("query while enter1");
+				applicationsList.add(mapApplication(results));
+			}
+		} catch (SQLException exp) {
+			classLogger.error(exp);
+			throw new UasException("Failed to get applications!");
+		}
+
+		return applicationsList;
+
 	}
 
 	@Override
@@ -168,10 +248,14 @@ public class DaoUasImpl implements IDaoUas {
 
 			pst.setString(1, interviewDate);
 			pst.setInt(2, application_Id);
-			
-			ResultSet result = pst.executeQuery();
-			if (result.next()) {
+
+			int result = pst.executeUpdate();
+
+			if (result > 0) {
 				valid = true;
+			} else {
+				valid = false;
+				System.out.println("No applicant found with entered Id");
 			}
 		} catch (SQLException exp) {
 			classLogger.error(exp);
@@ -181,8 +265,7 @@ public class DaoUasImpl implements IDaoUas {
 	}
 
 	@Override
-	public boolean rejectApplication(int application_Id)
-			throws UasException {
+	public boolean rejectApplication(int application_Id) throws UasException {
 		boolean valid = false;
 
 		try (Connection con = conPro.getConnection();
@@ -190,76 +273,269 @@ public class DaoUasImpl implements IDaoUas {
 						.prepareStatement(IQueryMapper.REJECT_APPLICANT)) {
 
 			pst.setInt(1, application_Id);
-			
-			ResultSet result = pst.executeQuery();
-			if (result.next()) {
+
+			int result = pst.executeUpdate();
+			if (result > 0) {
 				valid = true;
+			} else {
+				valid = false;
+				System.out.println("No applicant found with entered Id");
 			}
+
 		} catch (SQLException exp) {
 			classLogger.error(exp);
-			throw new UasException("Failed to update accept status ");
+			throw new UasException("Failed to update reject status ");
 		}
 		return valid;
 	}
 
 	@Override
 	public boolean confirmApplication(int application_Id) throws UasException {
-		// TODO Auto-generated method stub
-		return false;
+		boolean valid = false;
+
+		try (Connection con = conPro.getConnection();
+				PreparedStatement pst = con
+						.prepareStatement(IQueryMapper.CONFIRM_APPLICANT)) {
+
+			pst.setInt(1, application_Id);
+
+			int result = pst.executeUpdate();
+
+			if (result > 0) {
+				valid = true;
+			} else {
+				valid = false;
+				System.out.println("No applicant found with entered Id");
+			}
+		} catch (SQLException exp) {
+			classLogger.error(exp);
+			throw new UasException("Failed to update confirm status ");
+		}
+		return valid;
 	}
 
 	@Override
-	public boolean updProgramOffered(Programs_Offered program_offered)
-			throws UasException {
-		// TODO Auto-generated method stub
-		return false;
+	public boolean updProgramOffered(Programs_Offered program_offered,
+			String ProgramName) throws UasException {
+
+		boolean valid = false;
+
+		try (Connection con = conPro.getConnection();
+				PreparedStatement pst = con
+						.prepareStatement(IQueryMapper.UPD_PROG_OFFERED)) {
+
+			pst.setString(1, program_offered.getProgramName());
+			pst.setString(2, program_offered.getDescription());
+			pst.setString(3, program_offered.getApplicant_Eligibility());
+			pst.setInt(4, program_offered.getDuration());
+			pst.setString(5, program_offered.getDegree_Certificate_Offered());
+			pst.setString(6, ProgramName);
+
+			int result = pst.executeUpdate();
+			if (result > 0) {
+				valid = true;
+			} else {
+				System.out.println("Invalid ProgramName Entered to update");
+				valid = false;
+			}
+		} catch (SQLException msg) {
+			classLogger.error(msg);
+			throw new UasException("Failed to Update Programs offered");
+		}
+
+		return valid;
 	}
 
 	@Override
 	public boolean addProgramOffered(Programs_Offered program_offered)
 			throws UasException {
-		// TODO Auto-generated method stub
-		return false;
+		boolean valid = false;
+
+		try (Connection con = conPro.getConnection();
+				PreparedStatement pst = con
+						.prepareStatement(IQueryMapper.ADD_PROG_OFFERED)) {
+
+			pst.setString(1, program_offered.getProgramName());
+			pst.setString(2, program_offered.getDescription());
+			pst.setString(3, program_offered.getApplicant_Eligibility());
+			pst.setInt(4, program_offered.getDuration());
+			pst.setString(5, program_offered.getDegree_Certificate_Offered());
+
+			int result = pst.executeUpdate();
+			if (result > 0) {
+				valid = true;
+			} else {
+				System.out.println("Invalid deta entered to add programs offered");
+				valid = false;
+			}
+		} catch (SQLException msg) {
+			classLogger.error(msg);
+			throw new UasException("Failed to Add Programs offered");
+		}
+
+		return valid;
 	}
 
 	@Override
-	public boolean delProgramOffered(String ProgramName) throws UasException {
-		// TODO Auto-generated method stub
-		return false;
+	public boolean delProgramOffered(String programName) throws UasException {
+
+		boolean valid = false;
+		try (Connection con = conPro.getConnection();
+				PreparedStatement pst = con
+						.prepareStatement(IQueryMapper.DEL_PROG_OFFERED)) {
+
+			pst.setString(1, programName);
+			int result = pst.executeUpdate();
+			if (result > 0) {
+				valid = true;
+			} else {
+				valid = false;
+			}
+		} catch (SQLException exp) {
+			classLogger.error(exp);
+			throw new UasException("Failed to delete programs offered");
+		}
+
+		return valid;
 	}
 
 	@Override
-	public boolean updProgramScheduled(Programs_Scheduled program_Scheduled)
-			throws UasException {
+	public boolean updProgramScheduled(Programs_Scheduled program_Scheduled,
+			String scheduled_Program_Id) throws UasException {
 		// TODO Auto-generated method stub
-		return false;
+		boolean valid = false;
+
+		try (Connection con = conPro.getConnection();
+				PreparedStatement pst = con
+						.prepareStatement(IQueryMapper.ADD_PROG_SCHEDULED)) {
+
+			pst.setString(1, program_Scheduled.getScheduled_Program_Id());
+			pst.setString(2, program_Scheduled.getProgramName());
+			pst.setString(3, program_Scheduled.getCity());
+			pst.setInt(4, program_Scheduled.getPincode());
+			pst.setString(5, program_Scheduled.getStart_Date().toString());
+			pst.setString(6, program_Scheduled.getEnd_Date().toString());
+			pst.setInt(7, program_Scheduled.getSessions_Per_Week());
+			pst.setString(8, scheduled_Program_Id);
+			
+			int result = pst.executeUpdate();
+			if (result > 0) {
+				valid = true;
+			} else {
+				System.out.println("Invalid deta entered to update programs scheduled");
+				valid = false;
+			}
+		} catch (SQLException msg) {
+			classLogger.error(msg);
+			throw new UasException("Failed to update Programs scheduled");
+		}
+
+		return valid;
 	}
 
 	@Override
 	public boolean addProgramScheduled(Programs_Scheduled program_Scheduled)
 			throws UasException {
 		// TODO Auto-generated method stub
-		return false;
+		boolean valid = false;
+
+		try (Connection con = conPro.getConnection();
+				PreparedStatement pst = con
+						.prepareStatement(IQueryMapper.UPD_PROG_SCHEDULED)) {
+
+			pst.setString(1, program_Scheduled.getScheduled_Program_Id());
+			pst.setString(2, program_Scheduled.getProgramName());
+			pst.setString(3, program_Scheduled.getCity());
+			pst.setInt(4, program_Scheduled.getPincode());
+			pst.setString(5, program_Scheduled.getStart_Date().toString());
+			pst.setString(6, program_Scheduled.getEnd_Date().toString());
+			pst.setInt(7, program_Scheduled.getSessions_Per_Week());
+	
+			int result = pst.executeUpdate();
+			if (result > 0) {
+				valid = true;
+			} else {
+				System.out.println("Invalid data entered to add programs scheduled");
+				valid = false;
+			}
+		} catch (SQLException msg) {
+			classLogger.error(msg);
+			throw new UasException("Failed to add Programs scheduled");
+		}
+		return valid;
 	}
 
 	@Override
 	public boolean delProgramScheduled(String scheduled_Program_Id)
 			throws UasException {
-		// TODO Auto-generated method stub
-		return false;
+		boolean valid = false;
+		try (Connection con = conPro.getConnection();
+				PreparedStatement pst = con
+						.prepareStatement(IQueryMapper.DEL_PROG_SCHEDULED)) {
+
+			pst.setString(1, scheduled_Program_Id);
+			int result = pst.executeUpdate();
+			if (result > 0) {
+				valid = true;
+			} else {
+				valid = false;
+			}
+		} catch (SQLException exp) {
+			classLogger.error(exp);
+			throw new UasException("Failed to delete programs scheduled");
+		}
+
+		return valid;
 	}
 
 	@Override
 	public List<Application> viewApplicants() throws UasException {
-		// TODO Auto-generated method stub
-		return null;
+
+		List<Application> applicantsList = new ArrayList<>();
+		try (Connection con = conPro.getConnection();
+				PreparedStatement pst = con
+						.prepareStatement(IQueryMapper.VIEW_ALL_APPLICANTS)) {
+			System.out.println("function enter");
+			ResultSet results = pst.executeQuery();
+
+			System.out.println("query executed");
+			while (results.next()) {
+				System.out.println("query while enter");
+				applicantsList.add(mapApplication(results));
+			}
+		} catch (SQLException exp) {
+			classLogger.error(exp);
+			throw new UasException("Failed to get Applicants List!");
+		}
+
+		return applicantsList;
+
 	}
 
 	@Override
 	public List<Programs_Scheduled> viewPrograms(String startDate,
 			String endDate) throws UasException {
-		// TODO Auto-generated method stub
-		return null;
+
+		List<Programs_Scheduled> programsList = new ArrayList<>();
+
+		try (Connection con = conPro.getConnection();
+				PreparedStatement pst = con
+						.prepareStatement(IQueryMapper.VIEW_PROGS_TIME_PERIOD)) {
+
+			pst.setString(1, startDate);
+			pst.setString(2, endDate);
+
+			ResultSet results = pst.executeQuery();
+
+			while (results.next()) {
+				programsList.add(mapProgram(results));
+			}
+		} catch (SQLException msg) {
+			classLogger.error(msg);
+			throw new UasException("Failed to get program lists");
+		}
+
+		return programsList;
 	}
 
 }
